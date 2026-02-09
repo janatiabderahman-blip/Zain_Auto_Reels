@@ -1,0 +1,38 @@
+import os
+import requests
+import random
+
+# جلب البيانات من الإعدادات التي وضعتها
+TOKEN = os.getenv('FB_TOKEN')
+PAGE_ID = os.getenv('PAGE_ID')
+
+# كلمات بحث متنوعة لضمان وجود فيديوهات دائماً
+search_queries = ["satisfying gadgets shorts", "amazing inventions shorts", "funny cat shorts", "life hacks shorts"]
+query = random.choice(search_queries)
+
+print(f"🚀 جاري البحث عن فيديو جديد باستخدام كلمة: {query}")
+
+# الأمر السحري: يبحث في 40 فيديو ويختار أول واحد أقل من 60 ثانية وبصيغة mp4
+download_cmd = f"yt-dlp -f 'best[ext=mp4]' --max-downloads 1 --match-filter 'duration < 60' -o 'video.mp4' 'ytsearch40:{query}'"
+
+os.system(download_cmd)
+
+# التأكد من أن الفيديو تم تحميله بنجاح
+if os.path.exists('video.mp4'):
+    print("✅ تم العثور على فيديو مناسب وتحميله!")
+    
+    url = f"https://graph.facebook.com/v19.0/{PAGE_ID}/videos"
+    files = {'source': open('video.mp4', 'rb')}
+    data = {
+        'description': 'Amazing Gadgets & Shorts! ✨ #shorts #reels #viral',
+        'access_token': TOKEN
+    }
+    
+    response = requests.post(url, files=files, data=data)
+    
+    if response.status_code == 200:
+        print(f"🎉 تم النشر بنجاح! ID الفيديو: {response.json().get('id')}")
+    else:
+        print(f"❌ فشل النشر. رد فيسبوك: {response.text}")
+else:
+    print("⚠️ لم يتم العثور على فيديو قصير في أول 40 نتيجة، حاول مرة أخرى.")
