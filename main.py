@@ -1,32 +1,50 @@
-import requests, os, time, random
+import requests, os, time
 
+# جلب البيانات السرية من إعدادات GitHub
 TOKEN = os.getenv('FB_TOKEN')
 PAGE_ID = os.getenv('PAGE_ID')
 
 def run_bot():
-    os.system("rm -rf *.mp4")
-    # صيد فيديو ترند عالمي
-    os.system("yt-dlp -f 'best[ext=mp4]' --max-downloads 1 -o 'raw.mp4' 'ytsearch15:satisfying gadgets shorts'")
-    
-    if os.path.exists("raw.mp4"):
-        # تعديل تقني لكسر الحقوق وخطأ 6000
-        os.system("ffmpeg -i raw.mp4 -vf \"hflip,scale=1080:1920,setpts=0.99*PTS\" -c:a copy pro.mp4 -y")
+    # تنظيف الملفات القديمة لضمان عدم امتلاء الذاكرة
+    for f in ["v.mp4", "final.mp4"]:
+        if os.path.exists(f): os.remove(f)
+
+    print("🚀 جاري صيد فيديو ترند جديد...")
+    # كود تحميل الفيديو مع فلتر للجودة والوقت
+    cmd = "yt-dlp -f 'best[ext=mp4]' --max-downloads 1 --match-filter 'duration < 60' -o 'v.mp4' 'ytsearch15:satisfying gadgets shorts'"
+    os.system(cmd)
+
+    if os.path.exists("v.mp4"):
+        print("✅ تم التحميل. جاري كسر الحقوق وتغيير البصمة...")
+        # تغيير البصمة الرقمية: قلب الفيديو أفقياً وتغيير الحجم
+        os.system("ffmpeg -i v.mp4 -vf 'hflip,scale=1080:1920' -c:a copy final.mp4 -y")
         
-        url = f"https://graph.facebook.com/v18.0/{PAGE_ID}/video_reels"
-        init = requests.post(url, data={'upload_phase': 'start', 'access_token': TOKEN}).json()
-        
-        if 'video_id' in init:
-            v_id = init['video_id']
-            with open("pro.mp4", 'rb') as f:
-                requests.post(init['upload_url'], data=f, headers={'Authorization': f'OAuth {TOKEN}'})
+        if os.path.exists("final.mp4"):
+            print("📡 جاري الرفع لفيسبوك...")
+            url = f"https://graph.facebook.com/v18.0/{PAGE_ID}/video_reels"
             
-            time.sleep(60) # انتظار المعالجة
-            requests.post(url, data={
-                'upload_phase': 'finish', 'video_id': v_id, 
-                'video_state': 'PUBLISHED', 'description': 'Mind-blowing! ✨ #ZainWorld', 
-                'access_token': TOKEN
-            })
-            print("🎉 Done!")
+            # بدء عملية الرفع
+            init = requests.post(url, data={'upload_phase': 'start', 'access_token': TOKEN}).json()
+            
+            if 'video_id' in init:
+                video_id = init['video_id']
+                with open("final.mp4", 'rb') as f:
+                    requests.post(init['upload_url'], data=f, headers={'Authorization': f'OAuth {TOKEN}'})
+                
+                print("⏳ انتظار معالجة فيسبوك (60 ثانية)...")
+                time.sleep(60) # وقت ضروري لضمان عدم حدوث خطأ 6000
+                
+                # النشر النهائي
+                res = requests.post(url, data={
+                    'upload_phase': 'finish', 'video_id': video_id, 
+                    'video_state': 'PUBLISHED', 'description': 'Check this out! ✨ #ZainWorld', 
+                    'access_token': TOKEN
+                }).json()
+                print(f"🏁 النتيجة: {res}")
+            else:
+                print(f"❌ مشكلة في التوكن أو الصلاحيات: {init}")
+    else:
+        print("⚠️ لم يتم العثور على فيديوهات جديدة الآن.")
 
 if __name__ == "__main__":
     run_bot()
