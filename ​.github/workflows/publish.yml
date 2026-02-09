@@ -1,8 +1,8 @@
 name: Zain_Auto_Bot
 on:
+  workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *' # النشر تلقائياً كل 3 ساعات
-  workflow_dispatch: # يتيح لك التشغيل اليدوي بضغطة زر
+    - cron: '0 */3 * * *'
 
 jobs:
   build:
