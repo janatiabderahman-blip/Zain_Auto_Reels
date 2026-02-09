@@ -1,0 +1,21 @@
+name: Zain World Bot
+on:
+  schedule:
+    - cron: '0 */3 * * *' # كل 3 ساعات
+  workflow_dispatch: # للتشغيل اليدوي للتجربة
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install ffmpeg -y
+          pip install yt-dlp requests
+      - name: Run
+        env:
+          FB_TOKEN: ${{ secrets.FB_TOKEN }}
+          PAGE_ID: ${{ secrets.PAGE_ID }}
+        run: python main.py
