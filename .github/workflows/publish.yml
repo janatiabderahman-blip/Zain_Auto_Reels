@@ -1,32 +1,30 @@
-name: Zain World Bot
-on:
-  workflow_dispatch: # هذا السطر هو ما سيجعله يظهر لك الآن
-
-jobs:
-  run-bot:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup
-        run: |
-          sudo apt-get update
-          sudo apt-get install ffmpeg -y
-          pip install yt-dlp requests
       - name: Run
         env:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
           PAGE_ID: ${{ secrets.PAGE_ID }}
         run: |
-          echo "import requests, os, time" > main.py
-          echo "TOKEN = os.getenv('FB_TOKEN')" >> main.py
-          echo "PAGE_ID = os.getenv('PAGE_ID')" >> main.py
-          echo "os.system(\"yt-dlp -f 'best[ext=mp4]' --max-downloads 1 -o 'v.mp4' 'ytsearch10:satisfying shorts'\")" >> main.py
-          echo "if os.path.exists('v.mp4'):" >> main.py
-          echo "    os.system(\"ffmpeg -i v.mp4 -vf hflip -c:a copy out.mp4 -y\")" >> main.py
-          echo "    url = f'https://graph.facebook.com/v18.0/{PAGE_ID}/video_reels'" >> main.py
-          echo "    init = requests.post(url, data={'upload_phase': 'start', 'access_token': TOKEN}).json()" >> main.py
-          echo "    if 'video_id' in init:" >> main.py
-          echo "        with open('out.mp4', 'rb') as f: requests.post(init['upload_url'], data=f, headers={'Authorization': f'OAuth {TOKEN}'})" >> main.py
-          echo "        time.sleep(40)" >> main.py
-          echo "        requests.post(url, data={'upload_phase': 'finish', 'video_id': init['video_id'], 'video_state': 'PUBLISHED', 'description': 'Zain World Viral!', 'access_token': TOKEN})" >> main.py
-          python main.py
+          # كود البحث القوي
+          pip install yt-dlp requests
+          python -c "
+          import requests, os, time
+          TOKEN = os.getenv('FB_TOKEN')
+          PAGE_ID = os.getenv('PAGE_ID')
+          # محاولة صيد فيديو مؤكد
+          os.system(\"yt-dlp -f 'best[ext=mp4]' --max-downloads 1 --match-filter 'duration < 60' -o 'v.mp4' 'ytsearch20:satisfying shorts'\")
+          if os.path.exists('v.mp4'):
+              print('✅ تم العثور على فيديو، جاري المعالجة...')
+              os.system(\"ffmpeg -i v.mp4 -vf hflip -c:a copy out.mp4 -y\")
+              url = f'https://graph.facebook.com/v18.0/{PAGE_ID}/video_reels'
+              init = requests.post(url, data={'upload_phase': 'start', 'access_token': TOKEN}).json()
+              if 'video_id' in init:
+                  print(f'📡 جاري الرفع الفعلي (ID: {init[\"video_id\"]})...')
+                  with open('out.mp4', 'rb') as f:
+                      requests.post(init['upload_url'], data=f, headers={'Authorization': f'OAuth {TOKEN}'})
+                  time.sleep(45)
+                  res = requests.post(url, data={'upload_phase': 'finish', 'video_id': init['video_id'], 'video_state': 'PUBLISHED', 'description': 'Amazing! #ZainWorld', 'access_token': TOKEN}).json()
+                  print(f'🏁 النتيجة النهائية: {res}')
+              else:
+                  print(f'❌ خطأ في التوكن أو الصفحة: {init}')
+          else:
+              print('⚠️ لم يتم العثور على أي فيديو للتحميل!')
+          "
