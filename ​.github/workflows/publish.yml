@@ -1,0 +1,24 @@
+name: Zain_Auto_Bot
+on:
+  schedule:
+    - cron: '0 */3 * * *' # النشر تلقائياً كل 3 ساعات
+  workflow_dispatch: # يتيح لك التشغيل اليدوي بضغطة زر
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install ffmpeg -y
+          pip install yt-dlp requests
+
+      - name: Run Publisher
+        env:
+          FB_TOKEN: ${{ secrets.FB_TOKEN }}
+          PAGE_ID: ${{ secrets.PAGE_ID }}
+        run: python main.py
