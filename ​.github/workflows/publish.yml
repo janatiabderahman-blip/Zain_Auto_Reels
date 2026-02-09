@@ -22,3 +22,4 @@ jobs:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
           PAGE_ID: ${{ secrets.PAGE_ID }}
         run: python main.py
+
