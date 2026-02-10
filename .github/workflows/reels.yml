@@ -1,33 +1,34 @@
-name: Zain_Auto_Reels
+name: Zain_Auto_Reels_Pro
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:        # يتيح لك تشغيل البوت يدوياً للتجربة
   push:
-    branches: [ main ]
+    branches: [ main ]      # يعمل عند رفع أي تحديث للكود
   schedule:
-    - cron: "0 */3 * * *"   # كل 3 ساعات
+    - cron: "0 */3 * * *"   # يعمل تلقائياً كل 3 ساعات
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    # نحدد المهلة القصوى بـ 15 دقيقة لضمان عدم تعليق العمل
+    timeout-minutes: 15
 
     steps:
       - name: 🔍 Trigger info
         run: |
           echo "Event: ${{ github.event_name }}"
-          echo "Branch: ${{ github.ref }}"
           echo "Actor: ${{ github.actor }}"
           echo "Time: $(date)"
 
       - name: 📦 Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4  # هذا السطر ضروري جداً لسحب ملفاتك (main.py) للبيئة
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      - name: 🛠 Install system dependencies
+      - name: 🛠 Install system dependencies (FFmpeg)
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
@@ -37,14 +38,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 🚀 Run Publisher Script
+      - name: 🚀 Execution (AI Generation & Upload)
         env:
+          # ربط جميع المفاتيح التي أضفتها في Secrets
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
           PAGE_ID:  ${{ secrets.PAGE_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: |
-          echo "=== Running main.py ==="
+          echo "=== Starting AI Reel Process ==="
           python main.py
-          echo "=== main.py finished ==="
+          echo "=== Process Finished ==="
 
       - name: ✅ Job Completed
         if: always()
