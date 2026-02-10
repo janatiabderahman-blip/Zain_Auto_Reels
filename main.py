@@ -4,7 +4,6 @@ import random
 import requests
 import subprocess
 from pathlib import Path
-from bs4 import BeautifulSoup
 
 FB_TOKEN = os.getenv("FB_TOKEN")
 PAGE_ID  = os.getenv("PAGE_ID")
@@ -13,6 +12,19 @@ RAW   = Path("raw.mp4")
 PROC  = Path("proc.mp4")
 MUSIC = Path("music.mp3")
 FINAL = Path("final.mp4")
+
+# ============================
+# فيديوهات CC0 جاهزة وثابتة
+# ============================
+VIDEO_URLS = [
+    "https://cdn.pixabay.com/vimeo/239902905/smoke-12152.mp4",
+    "https://cdn.pixabay.com/vimeo/239902908/water-12153.mp4",
+    "https://cdn.pixabay.com/vimeo/239902909/ink-12154.mp4",
+    "https://cdn.pixabay.com/vimeo/239902910/colors-12155.mp4",
+    "https://cdn.pixabay.com/vimeo/239902911/liquid-12156.mp4",
+    "https://cdn.pixabay.com/vimeo/239902912/forest-12157.mp4",
+    "https://cdn.pixabay.com/vimeo/239902913/waves-12158.mp4",
+]
 
 TREND_TOPICS = [
     "Oddly Satisfying AI Loop",
@@ -51,32 +63,20 @@ def run_cmd(cmd):
     if proc.returncode != 0:
         raise RuntimeError("❌ ffmpeg failed")
 
-# =========================
-# LifeOfVids — يعمل 100٪
-# =========================
-def lifeofvids_download():
-    url = "https://www.lifeofvids.com/videos/"
-    log(f"🔍 Searching LifeOfVids: {url}")
+# ============================
+# تحميل فيديو CC0 جاهز
+# ============================
+def download_random_video():
+    url = random.choice(VIDEO_URLS)
+    log(f"⬇️ Downloading CC0 video: {url}")
 
-    r = requests.get(url, timeout=30)
+    r = requests.get(url, timeout=60)
     r.raise_for_status()
-    soup = BeautifulSoup(r.text, "html.parser")
 
-    items = soup.select("a.download")
-    if not items:
-        raise RuntimeError("❌ No videos found on LifeOfVids")
-
-    chosen = random.choice(items)
-    video_url = chosen["href"]
-
-    log(f"⬇️ Downloading CC0 video: {video_url}")
-
-    vr = requests.get(video_url, timeout=60)
-    vr.raise_for_status()
     with RAW.open("wb") as f:
-        f.write(vr.content)
+        f.write(r.content)
 
-    log("✅ Video downloaded successfully")
+    log("✅ Video downloaded")
 
 def download_music():
     log("🎵 Downloading CC0 music...")
@@ -99,7 +99,7 @@ def process_video_with_ai_style(text):
     vf = (
         "scale=1080:1920,"
         "fps=30,"
-        "eq=contrast=1.15:brightness=0.03:saturation=1.2,"
+        "eq=contrast=1.2:brightness=0.05:saturation=1.3,"
         "vignette,"
         f"{draw}"
     )
@@ -164,19 +164,19 @@ def upload_to_facebook(description):
     log(f"🎉 Reel published successfully: {finish.json()}")
 
 def run():
-    log("🚀 Starting AI+CC auto-reels bot (LifeOfVids version)...")
+    log("🚀 Starting AI+CC auto-reels bot (Full integrated version)...")
     validate_env()
     clean()
 
     topic = random.choice(TREND_TOPICS)
     log(f"🔥 Selected topic: {topic}")
 
-    lifeofvids_download()
+    download_random_video()
     download_music()
     process_video_with_ai_style(topic)
     add_music_to_video()
 
-    desc = f"🔥 {topic} (Auto-generated AI-style CC0 reel)"
+    desc = f"🔥 {topic} (Auto-generated AI-style reel)"
     upload_to_facebook(desc)
 
     clean()
