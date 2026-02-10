@@ -22,15 +22,6 @@ TREND_TOPICS = [
     "Endless Satisfying AI Motion",
 ]
 
-COVERR_CATEGORIES = [
-    "nature",
-    "technology",
-    "people",
-    "abstract",
-    "backgrounds",
-    "aerial",
-]
-
 MUSIC_URL = (
     "https://files.freemusicarchive.org/storage-freemusicarchive-org/"
     "music/no_curator/Scott_Holmes_Music/Corporate__Motivational_Music/"
@@ -60,9 +51,11 @@ def run_cmd(cmd):
     if proc.returncode != 0:
         raise RuntimeError("❌ ffmpeg failed")
 
+# =========================
+# Coverr — النسخة المستقرة
+# =========================
 def coverr_search_and_download():
-    category = random.choice(COVERR_CATEGORIES)
-    url = f"https://coverr.co/videos/{category}"
+    url = "https://coverr.co/videos"
     log(f"🔍 Searching Coverr: {url}")
 
     r = requests.get(url, timeout=30)
@@ -94,7 +87,7 @@ def coverr_search_and_download():
     with RAW.open("wb") as f:
         f.write(vr.content)
 
-    log("✅ Video downloaded")
+    log("✅ Video downloaded successfully")
 
 def download_music():
     log("🎵 Downloading CC0 music...")
