@@ -1,4 +1,4 @@
-name: Zain_Auto_Reels_Expert_Version
+name: AI_Reels_Auto_Publisher
 
 on:
   workflow_dispatch:
@@ -6,26 +6,31 @@ on:
     - cron: "0 */3 * * *"
 
 jobs:
-  run-bot:
+  build_and_publish:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: 📦 Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
+          cache: 'pip'
 
-      - name: 🛠 Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install System FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
 
-      - name: 📚 Install Deps
-        run: pip install -r requirements.txt
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install requests google-generativeai python-dotenv
 
-      - name: 🚀 Run Expert Publisher
+      - name: Run Script
         env:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
           PAGE_ID:  ${{ secrets.PAGE_ID }}
