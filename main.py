@@ -5,99 +5,68 @@ import subprocess
 import google.generativeai as genai
 from pathlib import Path
 
-# ENVIRONMENT CONFIGURATION
+# CONFIG
 FB_TOKEN   = os.getenv("FB_TOKEN")
 PAGE_ID    = os.getenv("PAGE_ID")
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 PEXELS_KEY = os.getenv("PEXELS_API_KEY")
+RAW, FINAL = Path("raw.mp4"), Path("final.mp4")
 
-# PATH CONFIGURATION
-BASE_DIR = Path(__file__).resolve().parent
-RAW_PATH = BASE_DIR / "raw_video.mp4"
-FINAL_PATH = BASE_DIR / "final_reel.mp4"
+def log(msg): print(f"🚀 [ZAIN-AI] {msg}", flush=True)
 
-def log(msg):
-    print(f"[*] {msg}", flush=True)
-
-def clean_env():
-    """Removes temporary files from the root directory"""
-    for file in [RAW_PATH, FINAL_PATH]:
-        if file.exists():
-            file.unlink()
-
-def get_content_ai():
-    """AI Engine: Generates unique content to avoid FB reuse policy"""
+def get_creative():
+    """توليد محتوى ذكي باستخدام Gemini 1.5 Flash"""
     try:
         genai.configure(api_key=GEMINI_KEY)
         model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = "Create a viral Facebook Reel concept. Format: Quote | Search Keyword | Description"
+        prompt = "Return exactly: Quote | Search Keyword | Description"
         response = model.generate_content(prompt)
         return [p.strip() for p in response.text.split("|")]
-    except Exception as e:
-        log(f"AI_ERROR: {e}")
-        return ["Keep going, your hard work will pay off.", "motivation", "Stay inspired! #motivation"]
+    except:
+        return ["Believe in yourself.", "mountain", "Daily motivation! #success"]
 
-def download_media(keyword):
-    """Media Engine: Fetches HD 1080p video from Pexels API"""
+def download_video(keyword):
+    """تحميل فيديو عالي الجودة"""
     headers = {"Authorization": PEXELS_KEY}
     url = f"https://api.pexels.com/videos/search?query={keyword}&per_page=1&orientation=portrait"
-    try:
-        res = requests.get(url, headers=headers).json()
-        video_url = [f['link'] for f in res['videos'][0]['video_files'] if f['width'] >= 1080][0]
-        with open(RAW_PATH, "wb") as f:
-            f.write(requests.get(video_url, timeout=60).content)
-    except Exception as e:
-        log(f"DOWNLOAD_ERROR: {e}")
-        # Fallback to a stable CC0 video
-        fallback = "https://cdn.pixabay.com/vimeo/239902912/forest-12157.mp4"
-        with open(RAW_PATH, "wb") as f:
-            f.write(requests.get(fallback).content)
+    res = requests.get(url, headers=headers).json()
+    v_url = [f['link'] for f in res['videos'][0]['video_files'] if f['width'] >= 1080][0]
+    with RAW.open("wb") as f: f.write(requests.get(v_url).content)
 
-def render_video(text):
-    """Graphics Engine: Professional FFmpeg rendering with text-overlay"""
-    vf_filters = (
+def render(text):
+    """المعالجة الاحترافية بـ FFmpeg"""
+    vf = (
         "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
-        f"drawtext=text='{text}':fontcolor=white:fontsize=70:x=(w-text_w)/2:y=(h-text_h)/2:"
+        f"drawtext=text='{text}':fontcolor=white:fontsize=75:x=(w-text_w)/2:y=(h-text_h)/2:"
         "box=1:boxcolor=black@0.5:boxborderw=40"
     )
-    cmd = [
-        "ffmpeg", "-y", "-i", str(RAW_PATH),
-        "-vf", vf_filters,
-        "-c:a", "aac", "-shortest", str(FINAL_PATH)
-    ]
-    subprocess.run(cmd, check=True)
+    subprocess.run(["ffmpeg", "-y", "-i", str(RAW), "-vf", vf, "-c:a", "aac", str(FINAL)], check=True)
 
-def publish_facebook(description):
-    """API Engine: Facebook Graph API v18.0 Integration"""
+def publish(desc):
+    """أمر النشر العام الفوري لضمان الظهور على الصفحة"""
     url = f"https://graph.facebook.com/v18.0/{PAGE_ID}/video_reels"
-    
-    # Step 1: Initialize Upload
+    # البدء
     init = requests.post(url, data={"upload_phase": "start", "access_token": FB_TOKEN}).json()
-    video_id, upload_url = init["video_id"], init["upload_url"]
-    
-    # Step 2: Push Binary Data
-    with open(FINAL_PATH, "rb") as f:
-        requests.post(upload_url, data=f, headers={"Authorization": f"OAuth {FB_TOKEN}"})
-    
-    # Step 3: Wait for Processing
-    time.sleep(45)
-    
-    # Step 4: Finalize & Publish
-    finish = requests.post(url, data={
-        "upload_phase": "finish", "video_id": video_id, 
-        "description": description, "access_token": FB_TOKEN
+    # الرفع
+    with FINAL.open("rb") as f:
+        requests.post(init["upload_url"], data=f, headers={"Authorization": f"OAuth {FB_TOKEN}"})
+    # الانتظار لمعالجة فيسبوك
+    time.sleep(60)
+    # النشر العام النهائي (أهم خطوة)
+    res = requests.post(url, data={
+        "upload_phase": "finish",
+        "video_id": init["video_id"],
+        "description": desc,
+        "video_state": "PUBLISHED", # هذا السطر يضمن الظهور العلني
+        "access_token": FB_TOKEN
     })
-    log(f"PUBLISH_STATUS: {finish.status_code}")
-
-def execute():
-    try:
-        clean_env()
-        quote, keyword, desc = get_content_ai()
-        download_media(keyword)
-        render_video(quote)
-        publish_facebook(desc)
-    finally:
-        clean_env()
+    log(f"Result: {res.status_code} - {res.text}")
 
 if __name__ == "__main__":
-    execute()
+    try:
+        quote, key, desc = get_creative()
+        download_video(key)
+        render(quote)
+        publish(desc)
+    except Exception as e:
+        log(f"Error: {e}")
