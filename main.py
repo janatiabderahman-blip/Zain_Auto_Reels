@@ -131,7 +131,7 @@ def run_expert_system():
 
 if __name__ == "__main__":
     run_expert_system()
-    # تعديل لجلب رابط الفيديو بعد النشر مباشرة
+    
     video_check = requests.get(
         f"https://graph.facebook.com/v19.0/{video_id}?fields=permalink_url,status&access_token={FB_TOKEN}"
     ).json()
