@@ -6,7 +6,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 */3 * * *'   # تشغيل كل 3 ساعات
+    - cron: '0 */3 * * *'
 
 jobs:
   run-bot:
@@ -40,7 +40,3 @@ jobs:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
           PAGE_ID: ${{ secrets.PAGE_ID }}
         run: python main.py
-
-      - name: Keep Runner Alive (Optional)
-        if: always()
-        run: echo "Workflow finished successfully"
