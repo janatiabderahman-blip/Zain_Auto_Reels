@@ -1,12 +1,9 @@
 import os
 import requests
 import random
-import time
-# الانتقال للمكتبة الجديدة بناءً على تحذير الصورة الثالثة
 from google import genai 
-from datetime import datetime
 
-# --- الإعدادات السيادية ---
+# الإعدادات
 FB_TOKEN   = os.getenv("FB_TOKEN")
 PAGE_ID    = os.getenv("PAGE_ID")
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
@@ -15,52 +12,54 @@ PEXELS_KEY = os.getenv("PEXELS_API_KEY")
 def log(msg): print(f"👑 [ELITE-SYSTEM] {msg}", flush=True)
 
 def get_viral_content():
-    """استخدام المكتبة الجديدة لضمان عدم حدوث 404"""
     try:
+        # استخدام المكتبة الجديدة كلياً
         client = genai.Client(api_key=GEMINI_KEY)
-        # نيشات تضمن حركة بصرية قوية (Drone, Cinematic, Motion)
-        niches = ["Cinematic drone shot of luxury city", "High speed sport car motion", "Abstract liquid motion 4k"]
-        prompt = f"Create a viral hook and a search keyword for: {random.choice(niches)}. Format: Hook | Keyword"
+        niches = ["Cinematic luxury life", "Mindset of champions", "Modern architecture 4k"]
+        prompt = f"Topic: {random.choice(niches)}. Format: Quote | Keyword"
         
         response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
-        if "|" in response.text:
+        # التحقق من وجود النص والفاصل |
+        if response.text and "|" in response.text:
             return [p.strip() for p in response.text.split("|")]
     except Exception as e:
-        log(f"⚠️ Gemini Error: {e}")
-    return ["Unstoppable Mindset.", "luxury motion"]
+        log(f"⚠️ Gemini API Error: {e}")
+    return ["Discipline is the bridge between goals and accomplishment.", "motivation"]
 
 def publish_empire_reel():
     try:
-        hook, keyword = get_viral_content()
-        log(f"🎯 Target: {keyword}")
+        content = get_viral_content()
+        quote, keyword = content[0], content[1]
+        log(f"🎯 Strategy Keyword: {keyword}")
 
         headers = {"Authorization": PEXELS_KEY}
-        # جلب فيديوهات أكثر لضمان جودة الاختيار
-        px_url = f"https://api.pexels.com/videos/search?query={keyword}&per_page=15&orientation=portrait"
+        # جلب فيديوهات عالية الجودة حصراً
+        px_url = f"https://api.pexels.com/videos/search?query={keyword}&per_page=15&orientation=portrait&size=large"
         res = requests.get(px_url, headers=headers).json()
         
         if res.get('videos'):
-            # فلترة: استبعاد الفيديوهات القصيرة جداً التي تبدو كـ GIF
+            # اختيار فيديو مدته كافية ليكون Reel حقيقي (أكثر من 12 ثانية)
             valid_videos = [v for v in res['videos'] if v['duration'] > 12]
             best_video = random.choice(valid_videos if valid_videos else res['videos'])
             
-            # اختيار ملف الجودة العالية (HD) حصراً
+            # استخراج رابط الجودة العالية
             video_url = next((f['link'] for f in best_video['video_files'] if f['width'] >= 720), best_video['video_files'][0]['link'])
             
-            # الوصف الفيروسي
-            description = f"🔥 {hook}\n\n#Success #Motivation #Wealth #Reels"
-            
-            # الرفع لفيسبوك
+            # النشر المباشر
             fb_url = f"https://graph.facebook.com/v19.0/{PAGE_ID}/videos"
-            payload = {'file_url': video_url, 'description': description, 'access_token': FB_TOKEN}
+            payload = {
+                'file_url': video_url,
+                'description': f"🔥 {quote}\n\n#Success #Motivation #Wealth",
+                'access_token': FB_TOKEN
+            }
             
             final_res = requests.post(fb_url, data=payload).json()
             if "id" in final_res:
-                log(f"🎉 DEPLOYED SUCCESSFULLY: {final_res['id']}")
+                log(f"🎉 SUCCESS! Reel Published: {final_res['id']}")
             else:
                 log(f"🚨 Meta Error: {final_res}")
         else:
-            log("❌ Pexels Search Empty")
+            log("❌ No videos found on Pexels.")
 
     except Exception as e:
         log(f"🚨 System Error: {e}")
