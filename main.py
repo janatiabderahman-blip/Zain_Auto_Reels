@@ -1,87 +1,86 @@
 import os
 import requests
 import google.generativeai as genai
-import time
+import random
 from datetime import datetime
 
-# --- الإعدادات السيادية ---
+# الإعدادات السيادية
 FB_TOKEN   = os.getenv("FB_TOKEN")
 PAGE_ID    = os.getenv("PAGE_ID")
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 PEXELS_KEY = os.getenv("PEXELS_API_KEY")
 
-def log(msg): print(f"🛡️ [GLOBAL-EXPERT-SYSTEM] {msg}", flush=True)
+def log(msg): print(f"🔥 [VIRAL-EXPERT-ROOT] {msg}", flush=True)
 
-def get_ai_creative_content(mode="reel"):
-    """توليد محتوى احترافي (حقائق أو ريلز) بلغتين"""
+def get_viral_logic():
+    """توليد محتوى يعتمد على سيكولوجية الانتشار"""
     genai.configure(api_key=GEMINI_KEY)
     model = genai.GenerativeModel('gemini-1.5-flash')
     
-    if mode == "post":
-        prompt = "أعطني حقيقة مذهلة أو قصة قصيرة جداً ملهمة باللغة العربية مع ترجمتها الإنجليزية. التنسيق: النص العربي | النص الإنجليزي"
-    else:
-        prompt = "Give me 1 viral high-hook success quote and 1 search keyword for a luxury/business video. Format: Quote | Keyword"
+    # استراتيجية النيشات الأكثر ربحية وانتشاراً (High CPM)
+    viral_niches = [
+        "Luxury Lifestyle and Success",
+        "Deep Psychological Facts about Humans",
+        "Wealth Mindset and Money Secrets",
+        "Mind-blowing Facts about the Universe",
+        "Unbelievable Ancient History Secrets"
+    ]
+    selected = random.choice(viral_niches)
+    
+    prompt = f"""
+    Create a VIRAL post for Facebook. Target niche: {selected}.
+    1. A 'Hook' line in Arabic and English that makes people stop scrolling.
+    2. A 'Story/Fact' that is shocking or highly motivating.
+    3. 1 Precise English keyword for a high-quality 4K video search.
+    Format: Hook | Story | Keyword
+    """
     
     try:
-        response = model.generate_content(prompt)
-        return [p.strip() for p in response.text.split("|")]
+        res = model.generate_content(prompt).text.split("|")
+        return [i.strip() for i in res]
     except:
-        return ["النجاح يتطلب الصبر | Success requires patience", "Success"] if mode == "post" else ["Dream Big.", "luxury"]
+        return ["Wait until the end.. | انتظر للنهاية", "Focus on your goals. | ركز على أهدافك", "Success"]
 
-def post_text_story():
-    """نشر منشورات نصية (قصص وحقائق) كل 30 دقيقة"""
-    log("📝 Generating Fact/Story Post...")
-    content = get_ai_creative_content(mode="post")
-    arabic_text, english_text = content[0], content[1]
-    
-    full_post = f"🌟 {arabic_text}\n\n✨ {english_text}\n\n#Facts #Stories #Wisdom #حقائق"
-    
-    url = f"https://graph.facebook.com/v19.0/{PAGE_ID}/feed"
-    payload = {'message': full_post, 'access_token': FB_TOKEN}
-    res = requests.post(url, data=payload).json()
-    if "id" in res: log(f"✅ Text Post Published: {res['id']}")
+def publish_dominator():
+    """نظام النشر الإمبراطوري - اختيار فيديوهات تخطف الأنفاس"""
+    try:
+        hook, story, keyword = get_viral_logic()
+        log(f"🎯 Target Niche Keyword: {keyword}")
 
-def publish_viral_reel():
-    """نشر ريلزات جذابة (High-Quality Reels) كل ساعة"""
-    log("🎬 Preparing Viral Reel...")
-    quote, keyword = get_content_final_upgraded() # دالة البحث المحدثة
-    
-    headers = {"Authorization": PEXELS_KEY}
-    # كلمات بحث تجذب المشاهدات (Luxury, Success, Nature)
-    search_keywords = [keyword, "luxury lifestyle", "satisfying", "urban life"]
-    
-    video_url = None
-    for kw in search_keywords:
-        px_url = f"https://api.pexels.com/videos/search?query={kw}&per_page=1&orientation=portrait"
-        res = requests.get(px_url, headers=headers).json()
-        if res.get('videos'):
-            video_url = res['videos'][0]['video_files'][0]['link']
-            break
-            
-    if video_url:
+        # البحث عن فيديو 4K بجودة سينمائية
+        headers = {"Authorization": PEXELS_KEY}
+        # اختيار عشوائي لصفحة النتائج لضمان عدم التكرار نهائياً
+        random_pg = random.randint(1, 20)
+        px_url = f"https://api.pexels.com/videos/search?query={keyword}&per_page=10&page={random_pg}&orientation=portrait"
+        
+        v_data = requests.get(px_url, headers=headers).json()
+        if not v_data.get('videos'):
+             # fallback إذا فشل البحث
+             v_data = requests.get(f"https://api.pexels.com/videos/search?query=luxury&per_page=1", headers=headers).json()
+
+        # اختيار فيديو عشوائي من النتائج لزيادة التنوع
+        video_url = random.choice(v_data['videos'])['video_files'][0]['link']
+        
+        # صياغة المنشور الفيروسي
+        viral_desc = f"🚀 {hook}\n\n{story}\n\n.\n.\n#Viral #Trending #Success #Mindset #Exploration #Reels #Motivation"
+        
+        # إرسال الأمر لفيسبوك
         fb_url = f"https://graph.facebook.com/v19.0/{PAGE_ID}/videos"
         payload = {
             'file_url': video_url,
-            'description': f"{quote}\n\n#Reels #Motivation #Success #Trending",
+            'description': viral_desc,
             'access_token': FB_TOKEN
         }
-        res = requests.post(fb_url, data=payload).json()
-        if "id" in res: log(f"🎉 Viral Reel Published: {res['id']}")
+        
+        response = requests.post(fb_url, data=payload).json()
+        if "id" in response:
+            log(f"✅ VIRAL REEL DEPLOYED! ID: {response['id']}")
+        else:
+            log(f"❌ Deploy Failed: {response}")
 
-def get_content_final_upgraded():
-    # نفس دالتك الناجحة مع تحسين جودة الكلمات
-    content = get_ai_creative_content(mode="reel")
-    return content[0], content[1]
+    except Exception as e:
+        log(f"🚨 System Error: {e}")
 
 if __name__ == "__main__":
-    # هذا السكريبت مصمم ليتم تشغيله بواسطة GitHub Actions
-    # سيتم التحكم في التوقيت عبر ملف YAML (نص ساعة للمنشورات، ساعة للريلز)
-    # سنقوم بتقسيم التشغيل بناءً على وقت الساعة
-    current_minute = datetime.now().minute
-    current_hour = datetime.now().hour
-
-    # منطق التشغيل الذكي:
-    post_text_story() # يتم نشره في كل تشغيل (كل 30 دقيقة)
-    
-    if current_minute < 30: # يتم نشر الريلز مرة واحدة كل ساعة (في بداية الساعة)
-        publish_viral_reel()
+    # تشغيل نظام الاكتساح
+    publish_dominator()
