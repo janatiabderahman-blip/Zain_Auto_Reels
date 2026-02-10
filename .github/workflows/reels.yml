@@ -1,4 +1,4 @@
-name: AI_Reels_Auto_Publisher
+name: Zain_Auto_Pro_System
 
 on:
   workflow_dispatch:
@@ -6,31 +6,24 @@ on:
     - cron: "0 */3 * * *"
 
 jobs:
-  build_and_publish:
+  automation:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Python Setup
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-          cache: 'pip'
 
-      - name: Install System FFmpeg
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
+      - name: System Tools
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      - name: Install Dependencies
-        run: |
-          pip install --upgrade pip
-          pip install requests google-generativeai python-dotenv
+      - name: 🛠 RUN SYSTEM FIXER
+        run: python system_fixer.py
 
-      - name: Run Script
+      - name: 🚀 RUN AI PUBLISHER
         env:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
           PAGE_ID:  ${{ secrets.PAGE_ID }}
