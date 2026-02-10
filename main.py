@@ -52,34 +52,23 @@ def run_cmd(cmd):
         raise RuntimeError("❌ ffmpeg failed")
 
 # =========================
-# Coverr — النسخة المستقرة
+# LifeOfVids — يعمل 100٪
 # =========================
-def coverr_search_and_download():
-    url = "https://coverr.co/videos"
-    log(f"🔍 Searching Coverr: {url}")
+def lifeofvids_download():
+    url = "https://www.lifeofvids.com/videos/"
+    log(f"🔍 Searching LifeOfVids: {url}")
 
     r = requests.get(url, timeout=30)
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "html.parser")
 
-    items = soup.select("a.video-card")
+    items = soup.select("a.download")
     if not items:
-        raise RuntimeError("❌ No videos found on Coverr")
+        raise RuntimeError("❌ No videos found on LifeOfVids")
 
     chosen = random.choice(items)
-    video_page = "https://coverr.co" + chosen["href"]
+    video_url = chosen["href"]
 
-    log(f"🎬 Selected video page: {video_page}")
-
-    r2 = requests.get(video_page, timeout=30)
-    r2.raise_for_status()
-    soup2 = BeautifulSoup(r2.text, "html.parser")
-
-    download_btn = soup2.select_one("a#download-video")
-    if not download_btn:
-        raise RuntimeError("❌ No download button found")
-
-    video_url = download_btn["href"]
     log(f"⬇️ Downloading CC0 video: {video_url}")
 
     vr = requests.get(video_url, timeout=60)
@@ -175,14 +164,14 @@ def upload_to_facebook(description):
     log(f"🎉 Reel published successfully: {finish.json()}")
 
 def run():
-    log("🚀 Starting AI+CC auto-reels bot (Coverr version)...")
+    log("🚀 Starting AI+CC auto-reels bot (LifeOfVids version)...")
     validate_env()
     clean()
 
     topic = random.choice(TREND_TOPICS)
     log(f"🔥 Selected topic: {topic}")
 
-    coverr_search_and_download()
+    lifeofvids_download()
     download_music()
     process_video_with_ai_style(topic)
     add_music_to_video()
