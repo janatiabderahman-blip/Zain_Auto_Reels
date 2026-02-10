@@ -2,106 +2,102 @@ import os
 import time
 import requests
 import subprocess
-import google.generativeai as genai  # الطريقة الصحيحة والمستقرة
+import google.generativeai as genai
 from pathlib import Path
 
-# استدعاء مفاتيح الربط (Secrets)
+# ENVIRONMENT CONFIGURATION
 FB_TOKEN   = os.getenv("FB_TOKEN")
 PAGE_ID    = os.getenv("PAGE_ID")
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 PEXELS_KEY = os.getenv("PEXELS_API_KEY")
 
-RAW, FINAL = Path("raw.mp4"), Path("final.mp4")
+# PATH CONFIGURATION
+BASE_DIR = Path(__file__).resolve().parent
+RAW_PATH = BASE_DIR / "raw_video.mp4"
+FINAL_PATH = BASE_DIR / "final_reel.mp4"
 
-def log(msg): print(f"💎 [ZAIN-EXPERT] {msg}", flush=True)
+def log(msg):
+    print(f"[*] {msg}", flush=True)
 
-def get_ai_content():
-    """توليد محتوى احترافي باستخدام Gemini 1.5 Flash المستقر"""
+def clean_env():
+    """Removes temporary files from the root directory"""
+    for file in [RAW_PATH, FINAL_PATH]:
+        if file.exists():
+            file.unlink()
+
+def get_content_ai():
+    """AI Engine: Generates unique content to avoid FB reuse policy"""
     try:
         genai.configure(api_key=GEMINI_KEY)
         model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        # برومبت احترافي لجلب محتوى فيروسي (Viral Content)
-        prompt = (
-            "Create a high-impact Facebook Reel concept. "
-            "Return exactly in this format: Quote | English Search Keyword | Professional Description"
-        )
-        
+        prompt = "Create a viral Facebook Reel concept. Format: Quote | Search Keyword | Description"
         response = model.generate_content(prompt)
-        parts = [p.strip() for p in response.text.split("|")]
-        
-        if len(parts) < 3: raise ValueError("AI Format Error")
-        return parts
+        return [p.strip() for p in response.text.split("|")]
     except Exception as e:
-        log(f"⚠️ AI Error: {e}. Switching to Backup Strategy.")
-        return ["Success is not final, failure is not fatal.", "inspiration", "Keep moving forward! #motivation #success"]
+        log(f"AI_ERROR: {e}")
+        return ["Keep going, your hard work will pay off.", "motivation", "Stay inspired! #motivation"]
 
-def download_hd_video(keyword):
-    """جلب فيديو عالي الدقة 1080p لضمان جودة المحتوى"""
+def download_media(keyword):
+    """Media Engine: Fetches HD 1080p video from Pexels API"""
     headers = {"Authorization": PEXELS_KEY}
     url = f"https://api.pexels.com/videos/search?query={keyword}&per_page=1&orientation=portrait"
-    
-    res = requests.get(url, headers=headers).json()
-    if not res.get('videos'):
-        # رابط احتياطي دائم لضمان عدم توقف البوت
-        video_url = "https://cdn.pixabay.com/vimeo/239902912/forest-12157.mp4"
-    else:
-        # اختيار أعلى دقة متاحة (Full HD)
+    try:
+        res = requests.get(url, headers=headers).json()
         video_url = [f['link'] for f in res['videos'][0]['video_files'] if f['width'] >= 1080][0]
-    
-    with RAW.open("wb") as f:
-        f.write(requests.get(video_url, timeout=60).content)
-    log("✅ HD Video ready.")
+        with open(RAW_PATH, "wb") as f:
+            f.write(requests.get(video_url, timeout=60).content)
+    except Exception as e:
+        log(f"DOWNLOAD_ERROR: {e}")
+        # Fallback to a stable CC0 video
+        fallback = "https://cdn.pixabay.com/vimeo/239902912/forest-12157.mp4"
+        with open(RAW_PATH, "wb") as f:
+            f.write(requests.get(fallback).content)
 
-def process_video_expert(text):
-    """معالجة سينمائية احترافية باستخدام FFmpeg"""
-    # فلتر توسيط النص، ضبط الحجم، وتحسين الألوان
-    vf = (
+def render_video(text):
+    """Graphics Engine: Professional FFmpeg rendering with text-overlay"""
+    vf_filters = (
         "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
-        "eq=contrast=1.1:brightness=0.03:saturation=1.2," # تحسين اللون سينمائياً
-        f"drawtext=text='{text}':fontcolor=white:fontsize=75:x=(w-text_w)/2:y=(h-text_h)/2:"
-        "box=1:boxcolor=black@0.5:boxborderw=35" # خلفية نص احترافية
+        f"drawtext=text='{text}':fontcolor=white:fontsize=70:x=(w-text_w)/2:y=(h-text_h)/2:"
+        "box=1:boxcolor=black@0.5:boxborderw=40"
     )
-    cmd = ["ffmpeg", "-y", "-i", str(RAW), "-vf", vf, "-c:a", "aac", "-shortest", str(FINAL)]
+    cmd = [
+        "ffmpeg", "-y", "-i", str(RAW_PATH),
+        "-vf", vf_filters,
+        "-c:a", "aac", "-shortest", str(FINAL_PATH)
+    ]
     subprocess.run(cmd, check=True)
 
-def publish_to_facebook(desc):
-    """الرفع الرسمي عبر فيسبوك Graph API v18.0"""
-    log("📡 Publishing to Facebook Reels...")
+def publish_facebook(description):
+    """API Engine: Facebook Graph API v18.0 Integration"""
     url = f"https://graph.facebook.com/v18.0/{PAGE_ID}/video_reels"
     
-    # المرحلة 1: البداية
+    # Step 1: Initialize Upload
     init = requests.post(url, data={"upload_phase": "start", "access_token": FB_TOKEN}).json()
     video_id, upload_url = init["video_id"], init["upload_url"]
     
-    # المرحلة 2: الرفع الفعلي
-    with FINAL.open("rb") as f:
+    # Step 2: Push Binary Data
+    with open(FINAL_PATH, "rb") as f:
         requests.post(upload_url, data=f, headers={"Authorization": f"OAuth {FB_TOKEN}"})
     
-    # المرحلة 3: انتظار المعالجة (هام جداً للصفحات الكبيرة)
-    time.sleep(40)
+    # Step 3: Wait for Processing
+    time.sleep(45)
     
-    # المرحلة 4: الإنهاء والوصف
+    # Step 4: Finalize & Publish
     finish = requests.post(url, data={
         "upload_phase": "finish", "video_id": video_id, 
-        "description": desc, "access_token": FB_TOKEN
+        "description": description, "access_token": FB_TOKEN
     })
-    log(f"🎉 Reel Published! ID: {video_id}")
+    log(f"PUBLISH_STATUS: {finish.status_code}")
 
-def run():
+def execute():
     try:
-        log("🚀 Zain Expert Bot Started...")
-        quote, key, desc = get_ai_content()
-        log(f"💡 Topic: {key}")
-        download_hd_video(key)
-        process_video_expert(quote)
-        publish_to_facebook(desc)
-    except Exception as e:
-        log(f"❌ Final Error: {e}")
+        clean_env()
+        quote, keyword, desc = get_content_ai()
+        download_media(keyword)
+        render_video(quote)
+        publish_facebook(desc)
     finally:
-        # تنظيف الملفات للحفاظ على مساحة GitHub
-        for f in [RAW, FINAL]:
-            if f.exists(): f.unlink()
+        clean_env()
 
 if __name__ == "__main__":
-    run()
+    execute()
