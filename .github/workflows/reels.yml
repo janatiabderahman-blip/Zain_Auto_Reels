@@ -1,32 +1,25 @@
-name: Global_Expert_Auto_Reels
-
+name: Global_Empire_Automation
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "0 */3 * * *" # نشر كل 3 ساعات لتعظيم الربح
+    - cron: '*/30 * * * *' # تشغيل كل 30 دقيقة بدقة
+  workflow_dispatch:
 
 jobs:
-  enterprise_publish:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: 🔄 Sync Repository
-        uses: actions/checkout@v4
-
-      - name: 🐍 Python Setup (Stable 3.11)
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
-
-      - name: 🛠 Install Media Tools
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu
-
-      - name: 🩹 RUN AUTO-FIXER
-        run: python system_fixer.py
-
-      - name: 🚀 RUN EXPERT PUBLISHER
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: pip install requests google-generativeai
+      - name: Execute Smart Posting
         env:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
-          PAGE_ID:  ${{ secrets.PAGE_ID }}
+          PAGE_ID: ${{ secrets.PAGE_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          PEXELS_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: python main.py
