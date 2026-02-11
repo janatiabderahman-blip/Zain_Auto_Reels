@@ -17,11 +17,17 @@ jobs:
         with:
           python-version: 3.11
 
-      - name: Install dependencies
+      - name: Install FFmpeg
         run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Reel Generation and Upload
+      - name: Run Main Script
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           PEXELS_KEY: ${{ secrets.PEXELS_KEY }}
@@ -29,4 +35,3 @@ jobs:
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
         run: |
           python main.py
-          
