@@ -1,66 +1,62 @@
 import os
 import requests
-import random
 import logging
-import google.generativeai as genai
-from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
-from moviepy.config import change_settings
+from genai import Client # استخدام المكتبة الجديدة حصراً
 
 logging.basicConfig(level=logging.INFO)
-change_settings({"IMAGEMAGICK_BINARY": "/usr/bin/convert"})
 
 class EmpireEngine:
     def __init__(self):
-        # تم تعديل الأسماء هنا لتطابق صور الـ Secrets الخاصة بك تماماً
-        self.gemini_key = os.getenv("GEMINI_API_KEY")
-        self.pexels_key = os.getenv("PEXELS_KEY") 
-        self.fb_page_id = os.getenv("PAGE_ID")
-        self.fb_token = os.getenv("FB_TOKEN")
-
-        # الإصلاح الجذري لخطأ 404: إجبار المكتبة على المسار المستقر v1
-        if self.gemini_key:
-            genai.configure(api_key=self.gemini_key, transport='rest')
-        else:
-            logging.error("GEMINI_API_KEY is missing!")
+        # الربط بـ API الجديد عبر المكتبة الحديثة
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        self.client = Client(api_key=self.api_key) if self.api_key else None
+        
+        # مفاتيح النظام الأخرى
+        self.pexels_key = os.getenv("PEXELS_KEY")
 
     def generate_content(self):
-        logging.info("Generating content via Gemini v1 Stable...")
+        logging.info("Generating content via New google-genai SDK...")
         try:
-            # استخدام الموديل المستقر
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content("Give me 3 short facts about space. Separate with '|'")
-            return [f.strip() for f in response.text.split('|')]
+            # الطريقة الجديدة لاستدعاء الموديل (تلقائياً v1 Stable)
+            response = self.client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents="Write 3 short space facts. Format: Fact | Fact | Fact"
+            )
+            return response.text.split('|')
         except Exception as e:
-            logging.error(f"Gemini Error: {e}")
-            return ["Space is silent.", "Mars is red.", "Stars are far."]
+            logging.error(f"New API Error: {e}")
+            return ["Space is infinite.", "The Moon orbits Earth.", "Sun is a star."]
 
     def fetch_video(self):
-        logging.info("Checking Pexels Key...")
+        # التحقق من مفتاح Pexels (الذي أثبت نجاحه في صورتك الأخيرة)
         if not self.pexels_key:
-            logging.error("PEXELS_KEY is empty! Check your GitHub Secrets naming.")
+            logging.error("PEXELS_KEY is missing!")
             return None
-
+        
         headers = {"Authorization": self.pexels_key}
         url = "https://api.pexels.com/videos/search?query=galaxy&per_page=1"
         try:
             r = requests.get(url, headers=headers)
-            r.raise_for_status()
             video_url = r.json()['videos'][0]['video_files'][0]['link']
             with open("bg.mp4", "wb") as f:
                 f.write(requests.get(video_url).content)
+            logging.info("✅ Video secured via Pexels.")
             return "bg.mp4"
         except Exception as e:
             logging.error(f"Pexels Error: {e}")
             return None
 
     def run(self):
+        if not self.client:
+            logging.error("Client initialization failed.")
+            return
+            
         video = self.fetch_video()
         facts = self.generate_content()
+        
         if video and facts:
-            logging.info("🚀 Assets secured! Starting production...")
-            # هنا يكمل كود الرندرة والنشر لفيسبوك
-        else:
-            logging.error("❌ Aborting: Missing Keys or Assets.")
+            logging.info("🚀 System ready for Final Render!")
+            # كود المونتاج والنشر...
 
 if __name__ == "__main__":
     EmpireEngine().run()
