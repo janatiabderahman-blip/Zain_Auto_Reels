@@ -12,128 +12,67 @@ class EmpireEngine:
         self.api_key = os.getenv("GEMINI_API_KEY")
         self.pexels_key = os.getenv("PEXELS_KEY")
 
-        self.client = None
+        if not self.api_key:
+            raise RuntimeError("GEMINI_API_KEY missing")
 
-        # Fallback models (لن نغيّر الأسماء)
+        self.client = genai.Client(
+            api_key=self.api_key,
+            http_options={"api_version": "v1"}
+        )
+
+        # ✅ الموديلات الوحيدة المستقرة حاليًا
         self.model_candidates = [
-            "gemini-1.5-flash",
-            "gemini-1.5-pro",
-            "gemini-pro"
+            "models/gemini-1.5-flash",
+            "models/gemini-1.5-flash-latest"
         ]
 
-        if not self.api_key:
-            logging.error("❌ GEMINI_API_KEY not found")
-            return
-
-        try:
-            # 🔥 إجبار استخدام v1 (حل نهائي لمشكلة 404)
-            self.client = genai.Client(
-                api_key=self.api_key,
-                http_options={"api_version": "v1"}
-            )
-            self.model_candidates = self._discover_models()
-        except Exception as e:
-            logging.error(f"Initialization failed: {e}")
-            self.client = None
-
-    def _discover_models(self):
-        """Auto-detect models that support generateContent"""
-        try:
-            models = []
-            for m in self.client.models.list():
-                if "generateContent" in m.supported_generation_methods:
-                    models.append(m.name)
-
-            if models:
-                logging.info(f"✅ Available models: {models}")
-                return models
-        except Exception as e:
-            logging.warning(f"Model discovery failed: {e}")
-
-        logging.warning("⚠️ Using fallback model list")
-        return self.model_candidates
-
     def generate_content_safe(self, prompt, retries=3):
-        """Auto retry + auto fallback + no crash"""
-        if not self.client:
-            return self._fallback_text()
-
         for model in self.model_candidates:
-            for attempt in range(1, retries + 1):
+            for i in range(retries):
                 try:
-                    logging.info(f"Trying {model} (Attempt {attempt})")
-                    response = self.client.models.generate_content(
+                    logging.info(f"Trying {model} (Attempt {i+1})")
+                    r = self.client.models.generate_content(
                         model=model,
                         contents=prompt
                     )
-                    if response and response.text:
-                        logging.info(f"✅ Success with {model}")
-                        return response.text
+                    if r and r.text:
+                        logging.info("✅ Success")
+                        return r.text
                 except Exception as e:
                     logging.warning(f"{model} failed: {e}")
                     time.sleep(2)
 
-            logging.error(f"❌ Model {model} exhausted retries")
-
-        logging.critical("🚨 All models failed")
-        return self._fallback_text()
-
-    def _fallback_text(self):
-        return (
-            "Space is vast and mysterious | "
-            "Black holes bend space and time | "
-            "The universe is constantly expanding"
-        )
+        logging.critical("🚨 All models failed – using fallback")
+        return "Space is vast and mysterious | Black holes warp spacetime | The universe is expanding"
 
     def fetch_video_safe(self):
-        """Safe Pexels video fetch (never crashes)"""
         if not self.pexels_key:
-            logging.warning("PEXELS_KEY missing")
             return None
 
-        headers = {"Authorization": self.pexels_key}
-        url = "https://api.pexels.com/videos/search?query=galaxy&per_page=1"
-
         try:
-            r = requests.get(url, headers=headers, timeout=10)
+            r = requests.get(
+                "https://api.pexels.com/videos/search?query=galaxy&per_page=1",
+                headers={"Authorization": self.pexels_key},
+                timeout=10
+            )
             r.raise_for_status()
-
-            videos = r.json().get("videos", [])
-            if not videos:
-                raise ValueError("No videos returned")
-
-            video_url = videos[0]["video_files"][0]["link"]
-            video_data = requests.get(video_url, timeout=15).content
-
+            video = r.json()["videos"][0]["video_files"][0]["link"]
+            data = requests.get(video).content
             with open("bg.mp4", "wb") as f:
-                f.write(video_data)
-
-            logging.info("🎬 Video secured")
+                f.write(data)
             return "bg.mp4"
-
         except Exception as e:
-            logging.error(f"Video fetch failed: {e}")
+            logging.error(f"Video error: {e}")
             return None
 
     def run(self):
-        if not self.client:
-            logging.error("System halted: No AI client")
-            return
-
         video = self.fetch_video_safe()
-        facts_raw = self.generate_content_safe(
+        text = self.generate_content_safe(
             "Write 3 amazing space facts separated by |"
         )
 
-        facts = [f.strip() for f in facts_raw.split("|") if f.strip()]
-        while len(facts) < 3:
-            facts.append("Exploring the universe beyond imagination")
-
-        if video:
-            logging.info(f"🚀 Ready: {facts[0][:40]}...")
-        else:
-            logging.warning("⚠️ Proceeding without video")
-
+        facts = [x.strip() for x in text.split("|") if x.strip()]
+        logging.info(f"🚀 Ready: {facts[0]}")
         logging.info("✅ Automation completed safely")
 
 
