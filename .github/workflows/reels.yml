@@ -24,8 +24,11 @@ jobs:
           # إصلاح صلاحيات ImageMagick للنصوص
           sudo sed -i 's/domain="path" rights="none" pattern="@\*"/domain="path" rights="read|write" pattern="@\*"/g' /etc/ImageMagick-6/policy.xml
 
-      - name: 4. Install Libraries
-        run: pip install google-generativeai moviepy==1.0.3 requests
+      - name: 4. Install Modern Libraries
+        run: |
+          pip install google-genai moviepy requests
+ 
+        
 
       - name: 5. Execute Core
         env:
