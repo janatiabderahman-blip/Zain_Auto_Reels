@@ -1,17 +1,17 @@
-name: Zain Empire Automation
+name: Empire Reels Automation
 on:
   schedule:
-    - cron: '0 * * * *' # ينشر كل ساعة
+    - cron: '0 */3 * * *' # كل 3 ساعات
   workflow_dispatch:
 
 jobs:
-  build:
+  run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
@@ -20,17 +20,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y imagemagick
-          # السماح لـ ImageMagick باستخدام الخطوط
+          # كسر قيد الأمان لـ ImageMagick لتمكين كتابة النصوص
           sudo sed -i 's/domain="path" rights="none" pattern="@\*"/domain="path" rights="read|write" pattern="@\*"/g' /etc/ImageMagick-6/policy.xml
 
-      - name: Install Python Libraries
-        run: |
-          pip install requests google-generativeai moviepy==1.0.3
+      - name: Install Python Packages
+        run: pip install -r requirements.txt
 
-      - name: Run Zain Bot
+      - name: Execute Empire Script
         env:
-          FB_TOKEN: ${{ secrets.FB_TOKEN }}
-          PAGE_ID: ${{ secrets.PAGE_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
         run: python main.py
