@@ -1,4 +1,4 @@
-requests
 google-generativeai
-moviepy
-
+moviepy==1.0.3
+requests
+decorator==4.4.2
