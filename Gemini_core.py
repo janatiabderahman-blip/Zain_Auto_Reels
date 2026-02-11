@@ -13,6 +13,8 @@ class EmpireEngine:
         self.pexels_key = os.getenv("PEXELS_KEY")
 
         self.client = None
+
+        # Fallback models (لن نغيّر الأسماء)
         self.model_candidates = [
             "gemini-1.5-flash",
             "gemini-1.5-pro",
@@ -24,21 +26,26 @@ class EmpireEngine:
             return
 
         try:
-            self.client = genai.Client(api_key=self.api_key)
+            # 🔥 إجبار استخدام v1 (حل نهائي لمشكلة 404)
+            self.client = genai.Client(
+                api_key=self.api_key,
+                http_options={"api_version": "v1"}
+            )
             self.model_candidates = self._discover_models()
         except Exception as e:
             logging.error(f"Initialization failed: {e}")
             self.client = None
 
     def _discover_models(self):
-        """Auto-detect supported models"""
+        """Auto-detect models that support generateContent"""
         try:
             models = []
             for m in self.client.models.list():
                 if "generateContent" in m.supported_generation_methods:
                     models.append(m.name)
+
             if models:
-                logging.info(f"✅ Discovered models: {models}")
+                logging.info(f"✅ Available models: {models}")
                 return models
         except Exception as e:
             logging.warning(f"Model discovery failed: {e}")
@@ -47,9 +54,8 @@ class EmpireEngine:
         return self.model_candidates
 
     def generate_content_safe(self, prompt, retries=3):
-        """Auto retry + auto fallback"""
+        """Auto retry + auto fallback + no crash"""
         if not self.client:
-            logging.error("AI client unavailable, using fallback text")
             return self._fallback_text()
 
         for model in self.model_candidates:
@@ -80,7 +86,7 @@ class EmpireEngine:
         )
 
     def fetch_video_safe(self):
-        """Safe Pexels video fetch"""
+        """Safe Pexels video fetch (never crashes)"""
         if not self.pexels_key:
             logging.warning("PEXELS_KEY missing")
             return None
