@@ -1,37 +1,37 @@
-name: Generate and Upload AI Reels
+name: AI Empire - Auto Reels Every 4 Hours
 
 on:
   schedule:
-    - cron: '0 */3 * * *'  # Every 3 hours
-  workflow_dispatch:
+    # يعمل كل 4 ساعات (00:00, 04:00, 08:00, 12:00, 16:00, 20:00)
+    - cron: '0 */4 * * *'
+  workflow_dispatch: # للسماح لك بتشغيله يدوياً في أي وقت
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.11
+          python-version: '3.9'
 
-      - name: Install FFmpeg
+      - name: Install System Dependencies (FFmpeg)
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg fonts-dejavu
+          # تم استبدال MoviePy بـ FFmpeg لضمان استقرار الإمبراطورية
 
-      - name: Install Python dependencies
+      - name: Install Python Requirements
         run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          [span_2](start_span)pip install requests ffmpeg-python Pillow google-generativeai python-dotenv[span_2](end_span)
 
-      - name: Run Main Script
+      - name: Execute Empire Engine
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PEXELS_KEY: ${{ secrets.PEXELS_KEY }}
-          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
-        run: |
-          python main.py
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+        run: python main.py
