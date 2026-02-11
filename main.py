@@ -29,7 +29,7 @@ def generate_text(prompt):
     print("⚠️ Using fallback text")
     return "Space is vast | Stars shine bright | AI changes the world"
 
-# --- 2. Fetch video from Pexels ---
+# --- 2. Fetch video from Pexels or fallback ---
 def fetch_video(query="space"):
     try:
         headers = {"Authorization": PEXELS_KEY}
