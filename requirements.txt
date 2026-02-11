@@ -1,4 +1,4 @@
-google-generativeai
-moviepy==1.0.3
 requests
-decorator==4.4.2
+moviepy
+ffmpeg-python
+Pillow
